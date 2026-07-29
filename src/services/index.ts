@@ -1,187 +1,181 @@
-import { mockCustomers } from '@/mock/data'
-import type { Customer } from '@/types'
-
-const delay = (ms: number) => new Promise((r) => setTimeout(r, ms))
-
-let customers = [...mockCustomers]
+import { apiClient } from './api'
+import type { Customer, Vehicle, JobCard, InventoryItem, Quotation, Invoice, Supplier } from '@/types'
 
 export const customersService = {
   async getAll(): Promise<Customer[]> {
-    await delay(300)
-    return customers
+    const res = await apiClient.get('/customers')
+    return res.data
   },
 
-  async getById(id: string): Promise<Customer | undefined> {
-    await delay(200)
-    return customers.find((c) => c.id === id)
+  async create(data: Partial<Customer>): Promise<Customer> {
+    const res = await apiClient.post('/customers', data)
+    return res.data
   },
 
-  async search(query: string): Promise<Customer[]> {
-    await delay(200)
-    const q = query.toLowerCase()
-    return customers.filter(
-      (c) =>
-        c.name.toLowerCase().includes(q) ||
-        c.phone.includes(q) ||
-        c.email?.toLowerCase().includes(q)
-    )
+  async update(id: string | number, data: Partial<Customer>): Promise<Customer> {
+    const res = await apiClient.put(`/customers/${id}`, data)
+    return res.data
   },
 
-  async create(data: Omit<Customer, 'id' | 'vehicleCount' | 'totalBilled' | 'createdAt'>): Promise<Customer> {
-    await delay(400)
-    const newCustomer: Customer = {
-      ...data,
-      id: `c${Date.now()}`,
-      vehicleCount: 0,
-      totalBilled: 0,
-      createdAt: new Date().toISOString(),
-    }
-    customers = [newCustomer, ...customers]
-    return newCustomer
-  },
-
-  async update(id: string, data: Partial<Customer>): Promise<Customer> {
-    await delay(400)
-    customers = customers.map((c) => (c.id === id ? { ...c, ...data } : c))
-    return customers.find((c) => c.id === id)!
-  },
-
-  async delete(id: string): Promise<void> {
-    await delay(300)
-    customers = customers.filter((c) => c.id !== id)
+  async delete(id: string | number): Promise<void> {
+    await apiClient.delete(`/customers/${id}`)
   },
 }
 
 export const vehiclesService = {
-  async getAll() {
-    await delay(300)
-    const { mockVehicles } = await import('@/mock/data')
-    return mockVehicles
+  async getAll(): Promise<Vehicle[]> {
+    const res = await apiClient.get('/vehicles')
+    return res.data
   },
-  async getByCustomer(customerId: string) {
-    await delay(200)
-    const { mockVehicles } = await import('@/mock/data')
-    return mockVehicles.filter((v) => v.customerId === customerId)
-  },
-  async getById(id: string) {
-    await delay(200)
-    const { mockVehicles } = await import('@/mock/data')
-    return mockVehicles.find((v) => v.id === id)
+
+  async create(data: Partial<Vehicle>): Promise<Vehicle> {
+    const res = await apiClient.post('/vehicles', data)
+    return res.data
   },
 }
 
 export const jobsService = {
-  async getAll() {
-    await delay(300)
-    const { mockJobs } = await import('@/mock/data')
-    return mockJobs
+  async getAll(): Promise<JobCard[]> {
+    const res = await apiClient.get('/jobcards')
+    return res.data
   },
-  async getById(id: string) {
-    await delay(200)
-    const { mockJobs } = await import('@/mock/data')
-    return mockJobs.find((j) => j.id === id)
+
+  async create(data: Partial<JobCard>): Promise<JobCard> {
+    const res = await apiClient.post('/jobcards', data)
+    return res.data
   },
-  async getByStatus(status: string) {
-    await delay(200)
-    const { mockJobs } = await import('@/mock/data')
-    return mockJobs.filter((j) => j.status === status)
+
+  async updateStatus(id: string | number, status: string): Promise<JobCard> {
+    const res = await apiClient.patch(`/jobcards/${id}/status`, { status })
+    return res.data
   },
 }
 
 export const inventoryService = {
-  async getAll() {
-    await delay(300)
-    const { mockInventory } = await import('@/mock/data')
-    return mockInventory
+  async getAll(): Promise<InventoryItem[]> {
+    const res = await apiClient.get('/items')
+    return res.data
   },
-  async getLowStock() {
-    await delay(200)
-    const { mockInventory } = await import('@/mock/data')
-    return mockInventory.filter((i) => i.quantity <= i.minimumStock)
+
+  async create(data: Partial<InventoryItem>): Promise<InventoryItem> {
+    const res = await apiClient.post('/items', data)
+    return res.data
   },
-  async search(query: string) {
-    await delay(200)
-    const { mockInventory } = await import('@/mock/data')
-    const q = query.toLowerCase()
-    return mockInventory.filter(
-      (i) =>
-        i.name.toLowerCase().includes(q) ||
-        i.partNumber.toLowerCase().includes(q) ||
-        i.brand.toLowerCase().includes(q)
-    )
+
+  async update(id: string | number, data: Partial<InventoryItem>): Promise<InventoryItem> {
+    const res = await apiClient.put(`/items/${id}`, data)
+    return res.data
+  },
+
+  async stockIn(id: string | number, quantity: number): Promise<void> {
+    await apiClient.post(`/items/${id}/stock-in/${quantity}`)
   },
 }
 
+
 export const quotationsService = {
-  async getAll() {
-    await delay(300)
-    const { mockQuotations } = await import('@/mock/data')
-    return mockQuotations
+  async getAll(): Promise<Quotation[]> {
+    const res = await apiClient.get('/quotations')
+    return res.data
   },
-  async getById(id: string) {
-    await delay(200)
-    const { mockQuotations } = await import('@/mock/data')
-    return mockQuotations.find((q) => q.id === id)
+
+  async create(data: Partial<Quotation>): Promise<Quotation> {
+    const res = await apiClient.post('/quotations', data)
+    return res.data
+  },
+
+  async update(id: string | number, data: Partial<Quotation>): Promise<Quotation> {
+    const res = await apiClient.put(`/quotations/${id}`, data)
+    return res.data
+  },
+
+  async delete(id: string | number): Promise<void> {
+    await apiClient.delete(`/quotations/${id}`)
+  },
+
+  async convertToInvoice(id: string | number): Promise<{ id: number; invoiceNumber: string }> {
+    const res = await apiClient.post(`/quotations/${id}/convert`)
+    return res.data
   },
 }
 
 export const billingService = {
-  async getAll() {
-    await delay(300)
-    const { mockInvoices } = await import('@/mock/data')
-    return mockInvoices
+  async getAll(): Promise<Invoice[]> {
+    const res = await apiClient.get('/invoices')
+    return res.data
   },
-  async getById(id: string) {
-    await delay(200)
-    const { mockInvoices } = await import('@/mock/data')
-    return mockInvoices.find((i) => i.id === id)
+
+  async create(data: Partial<Invoice>): Promise<Invoice> {
+    const res = await apiClient.post('/invoices', { invoice: data, items: data.items })
+    return res.data
+  },
+}
+
+export const suppliersService = {
+  async getAll(): Promise<Supplier[]> {
+    const res = await apiClient.get('/suppliers')
+    return res.data
+  },
+
+  async create(data: Partial<Supplier>): Promise<Supplier> {
+    const res = await apiClient.post('/suppliers', data)
+    return res.data
   },
 }
 
 export const dashboardService = {
   async getStats() {
-    await delay(400)
-    const { mockDashboardStats } = await import('@/mock/data')
-    return mockDashboardStats
+    const res = await apiClient.get('/dashboard/stats')
+    return res.data
   },
   async getRevenueData() {
-    await delay(300)
-    const { mockRevenueData } = await import('@/mock/data')
-    return mockRevenueData
+    return [
+      { date: 'Jan', revenue: 720000, expenses: 280000 },
+      { date: 'Feb', revenue: 650000, expenses: 260000 },
+      { date: 'Mar', revenue: 810000, expenses: 310000 },
+      { date: 'Apr', revenue: 740000, expenses: 290000 },
+      { date: 'May', revenue: 890000, expenses: 320000 },
+      { date: 'Jun', revenue: 950000, expenses: 350000 },
+      { date: 'Jul', revenue: 892000, expenses: 330000 },
+    ]
   },
   async getServiceTrend() {
-    await delay(300)
-    const { mockServiceTrend } = await import('@/mock/data')
-    return mockServiceTrend
+    return [
+      { month: 'Jan', jobs: 142, completed: 138 },
+      { month: 'Feb', jobs: 128, completed: 125 },
+      { month: 'Mar', jobs: 165, completed: 160 },
+      { month: 'Apr', jobs: 149, completed: 145 },
+      { month: 'May', jobs: 178, completed: 172 },
+      { month: 'Jun', jobs: 192, completed: 185 },
+      { month: 'Jul', jobs: 156, completed: 148 },
+    ]
   },
   async getVehicleTypes() {
-    await delay(200)
-    const { mockVehicleTypes } = await import('@/mock/data')
-    return mockVehicleTypes
+    return [
+      { name: 'Sedan', value: 38, color: '#3B82F6' },
+      { name: 'SUV', value: 32, color: '#F97316' },
+      { name: 'Hatchback', value: 18, color: '#8B5CF6' },
+      { name: 'Luxury', value: 8, color: '#EC4899' },
+      { name: 'Commercial', value: 4, color: '#10B981' },
+    ]
   },
   async getActivity() {
-    await delay(200)
-    const { mockActivity } = await import('@/mock/data')
-    return mockActivity
+    return [
+      { id: 'a1', type: 'job', title: 'New job card created', description: 'JOB-2026-003 for Sneha Reddy - Oil Change', timestamp: '2026-07-23T09:00:00' },
+      { id: 'a2', type: 'invoice', title: 'Invoice paid', description: 'INV-2026-001 - ₹5,310 via UPI by Priya Sharma', timestamp: '2026-07-22T17:30:00' },
+      { id: 'a3', type: 'quotation', title: 'Quotation approved', description: 'QUO-2026-001 approved by Rajesh Kumar', timestamp: '2026-07-22T15:45:00' },
+    ]
   },
 }
 
 export const authService = {
   async login(email: string, password: string) {
-    await delay(800)
-    if (email === 'admin@autohub.com' && password === 'admin123') {
-      const token = 'mock_jwt_token_' + Date.now()
-      localStorage.setItem('autohub_token', token)
-      return {
-        user: {
-          id: 'u1',
-          name: 'Amit Patel',
-          email: 'admin@autohub.com',
-          role: 'admin' as const,
-          createdAt: '2025-01-01',
-        },
-        token,
-      }
+    const res = await apiClient.post('/auth/login', { email, password })
+    if (res.data.token) {
+      localStorage.setItem('autohub_token', res.data.token)
+      const user = { id: 'u1', name: 'User', email, role: 'admin' as const, createdAt: new Date().toISOString() }
+      localStorage.setItem('autohub_user', JSON.stringify(user))
+      return { user, token: res.data.token }
     }
     throw new Error('Invalid credentials')
   },

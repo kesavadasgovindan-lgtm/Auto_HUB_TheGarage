@@ -7,7 +7,7 @@ export const apiClient = axios.create({
   headers: {
     'Content-Type': 'application/json',
   },
-  timeout: 30000,
+  timeout: 15000,
 })
 
 // Request interceptor – attach auth token
@@ -15,7 +15,12 @@ apiClient.interceptors.request.use(
   (config) => {
     const token = localStorage.getItem('autohub_token')
     if (token) {
-      config.headers.Authorization = `Bearer ${token}`
+      if (token.startsWith('mock_')) {
+        // Clear legacy mock tokens so ASP.NET Core issues a real JWT
+        localStorage.removeItem('autohub_token')
+      } else {
+        config.headers.Authorization = `Bearer ${token}`
+      }
     }
     return config
   },
@@ -27,8 +32,7 @@ apiClient.interceptors.response.use(
   (response) => response,
   (error) => {
     if (error.response?.status === 401) {
-      localStorage.removeItem('autohub_token')
-      window.location.href = '/login'
+      console.warn('Unauthorized - token invalid or expired')
     }
     return Promise.reject(error)
   }

@@ -175,3 +175,6 @@ export function PriorityBadge({ priority }: PriorityBadgeProps) {
   }
   return <StatusBadge variant={map[priority] || 'default'}>{priority}</StatusBadge>
 }
+
+export { PrintDocumentModal } from './PrintDocumentModal'
+
