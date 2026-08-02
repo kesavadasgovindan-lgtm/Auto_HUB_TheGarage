@@ -8,12 +8,7 @@ import { formatCurrency, cn } from '@/lib/utils'
 
 const reportTypes = ['Revenue', 'Inventory', 'Service', 'GST', 'Mechanic', 'Customer']
 
-const mechanics = [
-  { name: 'Suresh Kumar', jobs: 48, revenue: 285000, rating: 4.8 },
-  { name: 'Ramesh Babu', jobs: 42, revenue: 198000, rating: 4.6 },
-  { name: 'Pradeep Singh', jobs: 35, revenue: 142000, rating: 4.4 },
-  { name: 'Kiran Rao', jobs: 28, revenue: 98000, rating: 4.2 },
-]
+const mechanics: { name: string; jobs: number; revenue: number; rating: number }[] = []
 
 export default function ReportsPage() {
   const [activeReport, setActiveReport] = useState('Revenue')
@@ -54,10 +49,10 @@ export default function ReportsPage() {
         <div className="space-y-4">
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
             {[
-              { label: 'Total Revenue', value: 5742000, icon: DollarSign, color: 'text-green-400 bg-green-500/10', change: 12.5 },
-              { label: 'Total Expenses', value: 2140000, icon: TrendingDown, color: 'text-red-400 bg-red-500/10', change: -3.2 },
-              { label: 'Net Profit', value: 3602000, icon: TrendingUp, color: 'text-blue-400 bg-blue-500/10', change: 18.7 },
-              { label: 'Invoices', value: 950, icon: FileText, color: 'text-purple-400 bg-purple-500/10', change: 8.1 },
+              { label: 'Total Revenue', value: 0, icon: DollarSign, color: 'text-green-400 bg-green-500/10', change: 0 },
+              { label: 'Total Expenses', value: 0, icon: TrendingDown, color: 'text-red-400 bg-red-500/10', change: 0 },
+              { label: 'Net Profit', value: 0, icon: TrendingUp, color: 'text-blue-400 bg-blue-500/10', change: 0 },
+              { label: 'Invoices', value: 0, icon: FileText, color: 'text-purple-400 bg-purple-500/10', change: 0 },
             ].map((s) => (
               <motion.div key={s.label} initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} className="premium-card p-4">
                 <div className="flex items-start justify-between mb-2">
