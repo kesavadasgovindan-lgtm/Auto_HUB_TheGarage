@@ -218,11 +218,13 @@ html {
   font-weight: 500;
   padding: 0.75rem 1rem;
   border-bottom: 1px solid hsl(var(--border));
+  white-space: nowrap;
 }
 
 .data-table td {
   padding: 0.875rem 1rem;
   border-bottom: 1px solid rgba(255,255,255,0.04);
+  white-space: nowrap;
 }
 
 .data-table tr:hover td {

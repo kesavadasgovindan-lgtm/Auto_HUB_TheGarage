@@ -12,6 +12,8 @@ import { mockDashboardStats, mockRevenueData, mockServiceTrend, mockVehicleTypes
 import { StatCardSkeleton, StatusBadge, getJobStatusVariant } from '@/components/common'
 import { formatCurrency, formatDateTime, cn } from '@/lib/utils'
 import { Link } from 'react-router-dom'
+import { dashboardService, jobsService, billingService, quotationsService } from '@/services'
+import type { JobCard, Invoice, Quotation } from '@/types'
 
 function useAnimatedCounter(target: number, duration = 1500) {
   const [count, setCount] = useState(0)
@@ -102,16 +104,68 @@ const activityTypeColors: Record<string, string> = {
 
 export default function DashboardPage() {
   const [loading, setLoading] = useState(true)
+  const [stats, setStats] = useState<any>({
+    todayRevenue: 0,
+    vehiclesInGarage: 0,
+    activeJobs: 0,
+    pendingDeliveries: 0,
+    lowStockItems: 0,
+    activeQuotations: 0,
+    completedServices: 0,
+    monthlyRevenue: 0,
+    revenueChange: 0,
+    jobsChange: 0,
+  })
+  const [pendingJobs, setPendingJobs] = useState<JobCard[]>([])
+  const [recentInvoices, setRecentInvoices] = useState<Invoice[]>([])
+  const [recentQuotations, setRecentQuotations] = useState<Quotation[]>([])
 
   useEffect(() => {
-    const t = setTimeout(() => setLoading(false), 600)
-    return () => clearTimeout(t)
+    const fetchData = async () => {
+      try {
+        setLoading(true)
+        const [statsData, jobsData, invoicesData, quotationsData] = await Promise.all([
+          dashboardService.getStats().catch(() => null),
+          jobsService.getAll().catch(() => []),
+          billingService.getAll().catch(() => []),
+          quotationsService.getAll().catch(() => [])
+        ])
+
+        if (statsData) {
+          setStats({
+            todayRevenue: statsData.todayRevenue || 0,
+            vehiclesInGarage: statsData.vehiclesInGarage || 0,
+            activeJobs: statsData.activeJobs || 0,
+            pendingDeliveries: statsData.pendingDeliveries || 0,
+            lowStockItems: statsData.lowStockItems || 0,
+            activeQuotations: statsData.activeQuotations || 0,
+            completedServices: statsData.completedServicesThisMonth || 0,
+            monthlyRevenue: statsData.monthlyRevenue || 0,
+            revenueChange: 0,
+            jobsChange: 0,
+          })
+        }
+
+        const activeJobsList = jobsData.filter(j => !['Delivered'].includes(j.status))
+        setPendingJobs(activeJobsList)
+
+        // Assuming larger ID means more recent
+        const sortedInvoices = [...invoicesData].sort((a, b) => Number(b.id) - Number(a.id))
+        setRecentInvoices(sortedInvoices.slice(0, 3))
+
+        const sortedQuotations = [...quotationsData].sort((a, b) => Number(b.id) - Number(a.id))
+        setRecentQuotations(sortedQuotations.slice(0, 3))
+
+      } catch (err) {
+        console.error('Failed to fetch dashboard data:', err)
+      } finally {
+        setLoading(false)
+      }
+    }
+    fetchData()
   }, [])
 
-  const stats = mockDashboardStats
-  const pendingJobs = mockJobs.filter((j) => j.status !== 'Delivered')
-  const recentInvoices = mockInvoices.slice(0, 3)
-  const recentQuotations = mockQuotations.slice(0, 3)
+  const emptyChartData: any[] = []
 
   if (loading) {
     return (
@@ -129,19 +183,19 @@ export default function DashboardPage() {
 
   return (
     <div>
-      <div className="page-header">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-6 gap-4">
         <div>
           <h1 className="page-title">Dashboard</h1>
           <p className="page-subtitle">Good morning! Here's what's happening at your garage today.</p>
         </div>
-        <div className="flex items-center gap-2 text-xs text-muted-foreground bg-secondary px-3 py-1.5 rounded-lg">
+        <div className="flex items-center gap-2 text-xs text-muted-foreground bg-secondary px-3 py-1.5 rounded-lg w-full sm:w-auto">
           <Activity className="w-3 h-3 text-green-400" />
           Live data
         </div>
       </div>
 
       {/* Stats Grid */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
         <StatCard title="Today's Revenue" value={stats.todayRevenue} prefix="₹" change={stats.revenueChange} icon={DollarSign} iconColor="text-green-400 bg-green-500/10" gradient="bg-green-500" />
         <StatCard title="Vehicles in Garage" value={stats.vehiclesInGarage} icon={Car} iconColor="text-blue-400 bg-blue-500/10" gradient="bg-blue-500" />
         <StatCard title="Active Jobs" value={stats.activeJobs} change={stats.jobsChange} icon={Wrench} iconColor="text-orange-400 bg-orange-500/10" gradient="bg-orange-500" />
@@ -164,7 +218,7 @@ export default function DashboardPage() {
             <span className="text-xs text-green-400 bg-green-500/10 px-2 py-0.5 rounded-full">+{stats.revenueChange}%</span>
           </div>
           <ResponsiveContainer width="100%" height={220}>
-            <AreaChart data={mockRevenueData}>
+            <AreaChart data={emptyChartData}>
               <defs>
                 <linearGradient id="revenue" x1="0" y1="0" x2="0" y2="1">
                   <stop offset="5%" stopColor="#3b82f6" stopOpacity={0.3} />
@@ -193,8 +247,8 @@ export default function DashboardPage() {
           </div>
           <ResponsiveContainer width="100%" height={160}>
             <PieChart>
-              <Pie data={mockVehicleTypes} cx="50%" cy="50%" innerRadius={45} outerRadius={75} paddingAngle={3} dataKey="value">
-                {mockVehicleTypes.map((entry, i) => (
+              <Pie data={emptyChartData} cx="50%" cy="50%" innerRadius={45} outerRadius={75} paddingAngle={3} dataKey="value">
+                {emptyChartData.map((entry, i) => (
                   <Cell key={i} fill={entry.color} />
                 ))}
               </Pie>
@@ -202,7 +256,8 @@ export default function DashboardPage() {
             </PieChart>
           </ResponsiveContainer>
           <div className="space-y-1.5 mt-2">
-            {mockVehicleTypes.map((t) => (
+            {emptyChartData.length === 0 && <div className="text-xs text-muted-foreground text-center py-2">No data yet</div>}
+            {emptyChartData.map((t) => (
               <div key={t.name} className="flex items-center justify-between text-xs">
                 <div className="flex items-center gap-2">
                   <div className="w-2 h-2 rounded-full" style={{ background: t.color }} />
@@ -224,7 +279,7 @@ export default function DashboardPage() {
             <p className="text-xs text-muted-foreground">Jobs created vs completed</p>
           </div>
           <ResponsiveContainer width="100%" height={180}>
-            <BarChart data={mockServiceTrend} barSize={8}>
+            <BarChart data={emptyChartData} barSize={8}>
               <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" />
               <XAxis dataKey="month" tick={{ fontSize: 10, fill: 'rgba(255,255,255,0.4)' }} axisLine={false} tickLine={false} />
               <YAxis tick={{ fontSize: 10, fill: 'rgba(255,255,255,0.4)' }} axisLine={false} tickLine={false} />
@@ -244,7 +299,8 @@ export default function DashboardPage() {
             </Link>
           </div>
           <div className="space-y-3">
-            {mockActivity.slice(0, 5).map((item) => (
+            {emptyChartData.length === 0 && <div className="text-xs text-muted-foreground text-center py-4">No data yet</div>}
+            {emptyChartData.slice(0, 5).map((item) => (
               <div key={item.id} className="flex items-start gap-2.5">
                 <div className={cn('mt-0.5 w-6 h-6 rounded-lg flex items-center justify-center text-xs flex-shrink-0', activityTypeColors[item.type])}>
                   <Activity className="w-3 h-3" />
@@ -267,6 +323,7 @@ export default function DashboardPage() {
             </Link>
           </div>
           <div className="space-y-2.5">
+            {pendingJobs.length === 0 && <div className="text-xs text-muted-foreground text-center py-4">No data yet</div>}
             {pendingJobs.slice(0, 4).map((job) => (
               <Link key={job.id} to={`/jobs/${job.id}`} className="flex items-center gap-3 p-2 rounded-xl hover:bg-secondary/50 transition-colors group">
                 <div className="w-8 h-8 rounded-lg bg-blue-500/10 flex items-center justify-center flex-shrink-0">
@@ -296,10 +353,11 @@ export default function DashboardPage() {
             </Link>
           </div>
           <div className="divide-y divide-border/30">
+            {recentInvoices.length === 0 && <div className="text-xs text-muted-foreground text-center py-4">No data yet</div>}
             {recentInvoices.map((inv) => (
               <div key={inv.id} className="flex items-center gap-3 px-4 py-3 hover:bg-secondary/30 transition-colors">
                 <div className="w-8 h-8 rounded-full bg-green-500/10 flex items-center justify-center flex-shrink-0">
-                  <span className="text-xs font-bold text-green-400">{inv.customerName[0]}</span>
+                  <span className="text-xs font-bold text-green-400">{inv.customerName?.[0] || '-'}</span>
                 </div>
                 <div className="flex-1 min-w-0">
                   <p className="text-sm font-medium truncate">{inv.invoiceNumber}</p>
@@ -324,6 +382,7 @@ export default function DashboardPage() {
             </Link>
           </div>
           <div className="divide-y divide-border/30">
+            {recentQuotations.length === 0 && <div className="text-xs text-muted-foreground text-center py-4">No data yet</div>}
             {recentQuotations.map((q) => (
               <div key={q.id} className="flex items-center gap-3 px-4 py-3 hover:bg-secondary/30 transition-colors">
                 <div className="w-8 h-8 rounded-full bg-yellow-500/10 flex items-center justify-center flex-shrink-0">

@@ -46,7 +46,7 @@ export function TopNav({ onMobileMenuOpen }: { onMobileMenuOpen: () => void }) {
           {/* Theme toggle */}
           <button
             onClick={toggleTheme}
-            className="p-2 rounded-xl hover:bg-secondary transition-colors"
+            className="p-2 rounded-xl hover:bg-secondary transition-colors min-w-[44px] min-h-[44px] flex items-center justify-center"
             title="Toggle theme"
           >
             <motion.div
@@ -63,7 +63,7 @@ export function TopNav({ onMobileMenuOpen }: { onMobileMenuOpen: () => void }) {
           <div className="relative">
             <button
               onClick={() => setNotifOpen(!notifOpen)}
-              className="relative p-2 rounded-xl hover:bg-secondary transition-colors"
+              className="relative p-2 rounded-xl hover:bg-secondary transition-colors min-w-[44px] min-h-[44px] flex items-center justify-center"
             >
               <Bell className="w-4 h-4" />
               <span className="absolute top-1.5 right-1.5 w-1.5 h-1.5 rounded-full bg-orange-500" />

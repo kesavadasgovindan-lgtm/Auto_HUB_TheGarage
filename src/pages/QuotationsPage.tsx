@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { Plus, Search, FileText, CheckCircle, ArrowRight, Edit, X, Trash2, Printer, Wrench, AlertTriangle } from 'lucide-react'
+import { Plus, Search, FileText, CheckCircle, ArrowRight, Edit, X, Trash2, Printer, Wrench, AlertTriangle, Mail } from 'lucide-react'
 import { quotationsService, customersService, vehiclesService, inventoryService } from '@/services'
 import { PageHeader, EmptyState, PrintDocumentModal } from '@/components/common'
 import { formatCurrency, formatDate } from '@/lib/utils'
@@ -167,22 +167,22 @@ function QuotationModal({ open, quotation, onClose, onSave }: QuotationModalProp
           <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
             <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} className="w-full max-w-3xl max-h-[90vh] overflow-y-auto rounded-2xl p-5 shadow-2xl bg-card border border-border">
               <div className="flex justify-between items-center mb-4 pb-3 border-b border-border">
-                <h2 className="font-semibold text-base text-foreground">{quotation ? 'Edit Draft Quotation' : 'New Quotation'}</h2>
+                <h2 className="font-semibold text-base text-foreground">{quotation && quotation.id ? 'Edit Draft Quotation' : 'New Quotation'}</h2>
                 <button type="button" onClick={onClose} className="text-muted-foreground hover:text-foreground"><X className="w-4 h-4" /></button>
               </div>
 
               <form onSubmit={handleSubmit} className="space-y-4">
-                <div className="grid grid-cols-2 gap-3">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   <div>
                     <label className="block text-xs font-medium text-foreground mb-1">Customer *</label>
-                    <select value={form.customerId} onChange={e => setForm(f => ({ ...f, customerId: e.target.value, vehicleId: '' }))} className="input-field text-xs py-2">
+                    <select value={form.customerId} onChange={e => setForm(f => ({ ...f, customerId: e.target.value, vehicleId: '' }))} className="input-field text-xs py-2 w-full">
                       <option value="">— Select Customer —</option>
                       {customers.map(c => <option key={c.id} value={c.id}>{c.name} ({c.phone})</option>)}
                     </select>
                   </div>
                   <div>
                     <label className="block text-xs font-medium text-foreground mb-1">Vehicle</label>
-                    <select value={form.vehicleId} onChange={e => setForm(f => ({ ...f, vehicleId: e.target.value }))} className="input-field text-xs py-2">
+                    <select value={form.vehicleId} onChange={e => setForm(f => ({ ...f, vehicleId: e.target.value }))} className="input-field text-xs py-2 w-full">
                       <option value="">— Select Vehicle —</option>
                       {filteredVehicles.map(v => <option key={v.id} value={v.id}>{v.vehicleNumber} ({v.brand} {v.model})</option>)}
                     </select>
@@ -199,75 +199,79 @@ function QuotationModal({ open, quotation, onClose, onSave }: QuotationModalProp
                   </div>
 
                   {/* Table Column Headers */}
-                  <div className="grid grid-cols-[140px_1fr_60px_85px_65px_36px] gap-2 text-[11px] font-semibold text-muted-foreground px-1">
-                    <div>Inventory Item</div>
-                    <div>Description</div>
-                    <div className="text-center">Qty</div>
-                    <div className="text-right">Rate (₹)</div>
-                    <div className="text-right">VAT %</div>
-                    <div></div>
+                  <div className="overflow-x-auto">
+                    <div className="min-w-[600px] space-y-2 pb-2">
+                      <div className="grid grid-cols-[140px_1fr_60px_85px_65px_36px] gap-2 text-[11px] font-semibold text-muted-foreground px-1">
+                        <div>Inventory Item</div>
+                        <div>Description</div>
+                        <div className="text-center">Qty</div>
+                        <div className="text-right">Rate (₹)</div>
+                        <div className="text-right">VAT %</div>
+                        <div></div>
+                      </div>
+
+                      {items.map((item, i) => (
+                        <div key={i} className="grid grid-cols-[140px_1fr_60px_85px_65px_36px] gap-2 items-center">
+                          <select
+                            value={item.itemId || ''}
+                            onChange={e => handleSelectInventory(i, e.target.value)}
+                            className="input-field text-xs py-2 h-9 w-full"
+                          >
+                            <option value="">— Select —</option>
+                            {inventory.map(inv => (
+                              <option key={inv.id} value={inv.id.toString()}>
+                                {inv.name} (₹{inv.sellingPrice || inv.mrp})
+                              </option>
+                            ))}
+                          </select>
+
+                          <input
+                            placeholder="Item description"
+                            value={item.description}
+                            onChange={e => updateItem(i, 'description', e.target.value)}
+                            className="input-field text-xs py-2 h-9 w-full"
+                          />
+
+                          <input
+                            type="number"
+                            placeholder="Qty"
+                            value={item.quantity}
+                            onChange={e => updateItem(i, 'quantity', parseInt(e.target.value) || 1)}
+                            className="input-field text-xs py-2 text-center h-9 w-full"
+                          />
+
+                          <input
+                            type="number"
+                            placeholder="Rate ₹"
+                            value={item.rate === 0 ? '' : item.rate}
+                            onChange={e => updateItem(i, 'rate', parseFloat(e.target.value) || 0)}
+                            className="input-field text-xs py-2 text-right h-9 w-full"
+                          />
+
+                          <input
+                            type="number"
+                            placeholder="VAT %"
+                            value={item.vatPercent}
+                            onChange={e => updateItem(i, 'vatPercent', parseFloat(e.target.value) ?? 0)}
+                            className="input-field text-xs py-2 text-right h-9 font-medium text-blue-400 w-full"
+                            title="Per-item VAT Percentage"
+                          />
+
+                          <button
+                            type="button"
+                            onClick={() => removeItem(i)}
+                            className="h-9 w-9 flex items-center justify-center text-red-400 hover:text-red-300 hover:bg-red-500/10 rounded-lg transition-colors"
+                            title="Delete row"
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </button>
+                        </div>
+                      ))}
+                    </div>
                   </div>
 
-                  {items.map((item, i) => (
-                    <div key={i} className="grid grid-cols-[140px_1fr_60px_85px_65px_36px] gap-2 items-center">
-                      <select
-                        value={item.itemId || ''}
-                        onChange={e => handleSelectInventory(i, e.target.value)}
-                        className="input-field text-xs py-2 h-9"
-                      >
-                        <option value="">— Select —</option>
-                        {inventory.map(inv => (
-                          <option key={inv.id} value={inv.id.toString()}>
-                            {inv.name} (₹{inv.sellingPrice || inv.mrp})
-                          </option>
-                        ))}
-                      </select>
-
-                      <input
-                        placeholder="Item description"
-                        value={item.description}
-                        onChange={e => updateItem(i, 'description', e.target.value)}
-                        className="input-field text-xs py-2 h-9"
-                      />
-
-                      <input
-                        type="number"
-                        placeholder="Qty"
-                        value={item.quantity}
-                        onChange={e => updateItem(i, 'quantity', parseInt(e.target.value) || 1)}
-                        className="input-field text-xs py-2 text-center h-9"
-                      />
-
-                      <input
-                        type="number"
-                        placeholder="Rate ₹"
-                        value={item.rate === 0 ? '' : item.rate}
-                        onChange={e => updateItem(i, 'rate', parseFloat(e.target.value) || 0)}
-                        className="input-field text-xs py-2 text-right h-9"
-                      />
-
-                      <input
-                        type="number"
-                        placeholder="VAT %"
-                        value={item.vatPercent}
-                        onChange={e => updateItem(i, 'vatPercent', parseFloat(e.target.value) ?? 0)}
-                        className="input-field text-xs py-2 text-right h-9 font-medium text-blue-400"
-                        title="Per-item VAT Percentage"
-                      />
-
-                      <button
-                        type="button"
-                        onClick={() => removeItem(i)}
-                        className="h-9 w-9 flex items-center justify-center text-red-400 hover:text-red-300 hover:bg-red-500/10 rounded-lg transition-colors"
-                        title="Delete row"
-                      >
-                        <Trash2 className="w-4 h-4" />
-                      </button>
-                    </div>
-                  ))}
-
                   {/* Dedicated Labour Charges Input */}
-                  <div className="pt-2 border-t border-border/40 grid grid-cols-2 gap-3 items-center">
+                  <div className="pt-2 border-t border-border/40 grid grid-cols-1 sm:grid-cols-2 gap-3 items-center">
                     <div className="flex items-center gap-2 text-xs font-semibold text-foreground">
                       <Wrench className="w-3.5 h-3.5 text-blue-400" /> Labour Charge (₹)
                     </div>
@@ -276,7 +280,7 @@ function QuotationModal({ open, quotation, onClose, onSave }: QuotationModalProp
                       placeholder="0.00"
                       value={form.labourCharges === 0 ? '' : form.labourCharges}
                       onChange={e => setForm(f => ({ ...f, labourCharges: parseFloat(e.target.value) || 0 }))}
-                      className="input-field text-xs py-1.5 text-right font-medium"
+                      className="input-field text-xs py-1.5 sm:text-right font-medium w-full"
                     />
                   </div>
 
@@ -291,13 +295,225 @@ function QuotationModal({ open, quotation, onClose, onSave }: QuotationModalProp
                   <input value={form.remarks} onChange={e => setForm(f => ({ ...f, remarks: e.target.value }))} placeholder="Optional notes..." className="input-field text-xs py-2" />
                 </div>
 
-                <div className="flex gap-3 pt-2">
-                  <button type="button" onClick={onClose} className="flex-1 py-2.5 rounded-xl text-xs btn-secondary">Cancel</button>
-                  <button type="submit" disabled={saving} className="flex-1 py-2.5 rounded-xl text-xs font-semibold text-white bg-blue-600 hover:bg-blue-500">
-                    {saving ? 'Saving...' : (quotation ? 'Update Draft' : 'Save Draft Quotation')}
+                <div className="flex flex-col sm:flex-row gap-3 pt-2">
+                  <button type="button" onClick={onClose} className="flex-1 py-2.5 rounded-xl text-xs btn-secondary w-full">Cancel</button>
+                  <button type="submit" disabled={saving} className="flex-1 py-2.5 rounded-xl text-xs font-semibold text-white bg-blue-600 hover:bg-blue-500 w-full">
+                    {saving ? 'Saving...' : (quotation && quotation.id ? 'Update Draft' : 'Save Draft Quotation')}
                   </button>
                 </div>
               </form>
+            </motion.div>
+          </div>
+        </>
+      )}
+    </AnimatePresence>
+  )
+}
+
+// ─── Quotation Detail Modal ──────────────────────────────────────────────────
+
+interface QuotationDetailModalProps {
+  open: boolean
+  quotation: any | null
+  onClose: () => void
+  onCopy: (q: any) => void
+  onPrint: (q: any) => void
+}
+
+function QuotationDetailModal({ open, quotation, onClose, onCopy, onPrint }: QuotationDetailModalProps) {
+  const [customerEmail, setCustomerEmail] = useState<string | null>(null)
+
+  useEffect(() => {
+    if (open && quotation) {
+      const email = quotation.customer?.email || quotation.Customer?.Email
+      if (email) {
+        setCustomerEmail(email)
+      } else {
+        const cid = quotation.customerId || quotation.CustomerId
+        if (cid) {
+          customersService.getAll().then(customers => {
+            const c = customers.find(c => c.id.toString() === cid.toString())
+            setCustomerEmail(c?.email || null)
+          }).catch(() => setCustomerEmail(null))
+        } else {
+          setCustomerEmail(null)
+        }
+      }
+    }
+  }, [open, quotation])
+
+  if (!quotation) return null
+
+  const qNum = quotation.quotationNumber || quotation.QuotationNumber || `QT-${quotation.id}`
+  const custName = quotation.customerName || quotation.customer?.name || quotation.Customer?.Name || 'Customer'
+  const vehNum = quotation.vehicleNumber || quotation.vehicle?.vehicleNumber || quotation.Vehicle?.VehicleNumber || '—'
+  const vehName = quotation.vehicleName || quotation.vehicle?.name || quotation.Vehicle?.Name || 'Vehicle'
+  const date = quotation.date || quotation.createdAt || quotation.CreatedAt
+  const validUntil = quotation.validTill || quotation.ValidTill || '—'
+  const status = quotation.status || quotation.Status || 'Draft'
+  const items = quotation.items || quotation.Items || []
+  
+  const labour = quotation.labourCharges || quotation.LabourCharges || 0
+  
+  const itemGross = items.reduce((s: number, i: any) => s + ((i.rate || i.Rate || i.unitPrice || 0) * (i.quantity || i.Quantity || 1) - (i.discount || i.Discount || 0)), 0)
+  const itemVat = items.reduce((s: number, i: any) => {
+    const gross = (i.rate || i.Rate || i.unitPrice || 0) * (i.quantity || i.Quantity || 1) - (i.discount || i.Discount || 0)
+    const vatP = i.vatPercent ?? i.VatPercent ?? 0
+    return s + (gross * (vatP / 100))
+  }, 0)
+
+  const subtotal = itemGross + labour
+  const totalVat = itemVat + (labour * 0.05)
+  const grandTotal = subtotal + totalVat
+
+  const handleEmailCustomer = () => {
+    if (!customerEmail) {
+      alert("Customer email not available")
+      return
+    }
+
+    const subject = `Quotation [${qNum}] from AutoHub - The Garage`
+    
+    let body = `Dear ${custName},
+
+Please find your quotation details below:
+
+Quotation No: ${qNum}
+Date: ${formatDate(date)}
+Valid Until: ${validUntil !== '—' && validUntil ? formatDate(validUntil) : '—'}
+Vehicle: ${vehNum} - ${vehName}
+
+ITEMS:
+-----------------------------------------------
+`
+
+    items.forEach((item: any) => {
+      const desc = item.description || item.Description || 'Item'
+      const qty = item.quantity || item.Quantity || 1
+      const rate = item.rate || item.Rate || item.unitPrice || 0
+      const lineTotal = item.total || item.Total || (qty * rate)
+      
+      body += `${desc.padEnd(20)} Qty: ${qty}   Rate: ₹${rate.toLocaleString('en-IN')}   Total: ₹${lineTotal.toLocaleString('en-IN')}\n`
+    })
+
+    body += `-----------------------------------------------
+Labour Charges:          ₹${labour.toLocaleString('en-IN')}
+Subtotal:                ₹${subtotal.toLocaleString('en-IN')}
+VAT:                     ₹${totalVat.toFixed(2)}
+Grand Total:             ₹${grandTotal.toLocaleString('en-IN')}
+-----------------------------------------------
+
+This quotation is valid until ${validUntil !== '—' && validUntil ? formatDate(validUntil) : '—'}.
+
+Thank you for choosing AutoHub - The Garage.
+For queries, please contact us.
+
+Best regards,
+AutoHub - The Garage`
+
+    const mailtoLink = `mailto:${customerEmail}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`
+    window.location.href = mailtoLink
+  }
+
+  return (
+    <AnimatePresence>
+      {open && (
+        <>
+          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={onClose} className="fixed inset-0 bg-black/60 backdrop-blur-sm z-40" />
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+            <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} className="w-full max-w-2xl max-h-[90vh] overflow-y-auto rounded-2xl p-5 shadow-2xl bg-card border border-border">
+              <div className="flex justify-between items-center mb-3 pb-3 border-b border-border">
+                <h2 className="font-semibold text-base text-foreground">Quotation Details</h2>
+                <button type="button" onClick={onClose} className="text-muted-foreground hover:text-foreground"><X className="w-4 h-4" /></button>
+              </div>
+
+              <div className="space-y-4 text-xs">
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 p-3 rounded-xl bg-secondary/30">
+                  <div>
+                    <p className="text-muted-foreground">Quotation No.</p>
+                    <p className="font-bold text-foreground text-sm">{qNum}</p>
+                  </div>
+                  <div>
+                    <p className="text-muted-foreground">Status</p>
+                    <p className="font-medium text-foreground">{status}</p>
+                  </div>
+                  <div>
+                    <p className="text-muted-foreground">Date</p>
+                    <p className="font-medium text-foreground">{formatDate(date)}</p>
+                  </div>
+                  <div>
+                    <p className="text-muted-foreground">Valid Until</p>
+                    <p className="font-medium text-foreground">{validUntil !== '—' && validUntil ? formatDate(validUntil) : '—'}</p>
+                  </div>
+                  <div className="col-span-2">
+                    <p className="text-muted-foreground">Customer</p>
+                    <p className="font-medium text-foreground">{custName}</p>
+                  </div>
+                  <div className="col-span-2">
+                    <p className="text-muted-foreground">Vehicle</p>
+                    <p className="font-medium text-foreground">{vehNum}</p>
+                  </div>
+                </div>
+
+                <div className="p-3 rounded-xl bg-secondary/20 border border-border/50">
+                  <p className="font-bold text-foreground mb-2 text-xs">Line Items</p>
+                  <div className="space-y-1.5 overflow-x-auto">
+                    <div className="min-w-[400px]">
+                      <div className="grid grid-cols-[1fr_60px_90px_90px] gap-2 font-semibold text-muted-foreground pb-1 border-b border-border/40 text-[11px]">
+                        <div>Description</div>
+                        <div className="text-center">Qty</div>
+                        <div className="text-right">Rate (₹)</div>
+                        <div className="text-right">Total (₹)</div>
+                      </div>
+                      {items.map((item: any, idx: number) => {
+                        const desc = item.description || item.Description || 'Item'
+                        const qty = item.quantity || item.Quantity || 1
+                        const rate = item.rate || item.Rate || item.unitPrice || 0
+                        const lineTotal = item.total || item.Total || (qty * rate)
+                        return (
+                          <div key={idx} className="grid grid-cols-[1fr_60px_90px_90px] gap-2 items-center text-xs py-1 border-b border-border/20">
+                            <span className="font-medium text-foreground">{desc}</span>
+                            <span className="text-center text-muted-foreground">{qty}</span>
+                            <span className="text-right text-muted-foreground">₹{rate.toLocaleString('en-IN')}</span>
+                            <span className="text-right font-medium text-foreground">₹{lineTotal.toLocaleString('en-IN')}</span>
+                          </div>
+                        )
+                      })}
+                    </div>
+                  </div>
+
+                  <div className="mt-4 space-y-1 text-xs">
+                    <div className="flex justify-between text-muted-foreground">
+                      <span>Subtotal (incl. Labour ₹{labour.toLocaleString('en-IN')})</span>
+                      <span>₹{subtotal.toLocaleString('en-IN')}</span>
+                    </div>
+                    <div className="flex justify-between text-muted-foreground">
+                      <span>VAT</span>
+                      <span>₹{totalVat.toFixed(2)}</span>
+                    </div>
+                    <div className="flex justify-between font-bold text-sm pt-2 border-t border-border/40 text-foreground">
+                      <span>Grand Total</span>
+                      <span className="text-blue-400">₹{grandTotal.toLocaleString('en-IN')}</span>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="flex flex-col sm:flex-row gap-3 pt-2">
+                  <button type="button" onClick={handleEmailCustomer} className="flex-1 py-2.5 rounded-xl text-xs font-semibold text-white bg-blue-500 hover:bg-blue-400 flex items-center justify-center gap-2">
+                    <Mail className="w-4 h-4" /> Email Customer
+                  </button>
+                  <button type="button" onClick={() => { onPrint(quotation); onClose(); }} className="flex-1 py-2.5 rounded-xl text-xs font-semibold text-white bg-blue-600 hover:bg-blue-500 flex items-center justify-center gap-2">
+                    <Printer className="w-4 h-4" /> Print
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => { onCopy(quotation); onClose(); }}
+                    className="flex-1 py-2.5 rounded-xl text-xs font-semibold text-white bg-indigo-600 hover:bg-indigo-500 flex items-center justify-center gap-2"
+                  >
+                    <FileText className="w-4 h-4" /> Copy to New Quotation
+                  </button>
+                </div>
+              </div>
             </motion.div>
           </div>
         </>
@@ -362,7 +578,7 @@ function DeleteQuotationModal({ open, quotation, onClose, onConfirmDelete }: Del
 
               {/* Details View (Non-editable) */}
               <div className="space-y-4 text-xs">
-                <div className="grid grid-cols-3 gap-3 p-3 rounded-xl bg-secondary/30">
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 p-3 rounded-xl bg-secondary/30">
                   <div>
                     <p className="text-muted-foreground">Quotation No.</p>
                     <p className="font-bold text-foreground text-sm">{qNum}</p>
@@ -380,35 +596,37 @@ function DeleteQuotationModal({ open, quotation, onClose, onConfirmDelete }: Del
                 {/* Items Breakdown Table */}
                 <div className="p-3 rounded-xl bg-secondary/20 border border-border/50">
                   <p className="font-bold text-foreground mb-2 text-xs">Quotation Line Items</p>
-                  <div className="space-y-1.5">
-                    <div className="grid grid-cols-[1fr_60px_90px_90px] gap-2 font-semibold text-muted-foreground pb-1 border-b border-border/40 text-[11px]">
-                      <div>Description</div>
-                      <div className="text-center">Qty</div>
-                      <div className="text-right">Rate (₹)</div>
-                      <div className="text-right">Total (₹)</div>
-                    </div>
-                    {items.map((item: any, idx: number) => {
-                      const desc = item.description || item.Description || 'Item'
-                      const qty = item.quantity || item.Quantity || 1
-                      const rate = item.rate || item.Rate || item.unitPrice || 0
-                      const lineTotal = item.total || item.Total || (qty * rate)
-                      return (
-                        <div key={idx} className="grid grid-cols-[1fr_60px_90px_90px] gap-2 items-center text-xs py-1 border-b border-border/20">
-                          <span className="font-medium text-foreground">{desc}</span>
-                          <span className="text-center text-muted-foreground">{qty}</span>
-                          <span className="text-right text-muted-foreground">₹{rate.toLocaleString('en-IN')}</span>
-                          <span className="text-right font-medium text-foreground">₹{lineTotal.toLocaleString('en-IN')}</span>
-                        </div>
-                      )
-                    })}
-                    {labour > 0 && (
-                      <div className="grid grid-cols-[1fr_60px_90px_90px] gap-2 items-center text-xs py-1 border-b border-border/20">
-                        <span className="font-medium text-blue-400">Labour Charge</span>
-                        <span className="text-center text-muted-foreground">1</span>
-                        <span className="text-right text-muted-foreground">₹{labour.toLocaleString('en-IN')}</span>
-                        <span className="text-right font-medium text-foreground">₹{labour.toLocaleString('en-IN')}</span>
+                  <div className="space-y-1.5 overflow-x-auto">
+                    <div className="min-w-[400px]">
+                      <div className="grid grid-cols-[1fr_60px_90px_90px] gap-2 font-semibold text-muted-foreground pb-1 border-b border-border/40 text-[11px]">
+                        <div>Description</div>
+                        <div className="text-center">Qty</div>
+                        <div className="text-right">Rate (₹)</div>
+                        <div className="text-right">Total (₹)</div>
                       </div>
-                    )}
+                      {items.map((item: any, idx: number) => {
+                        const desc = item.description || item.Description || 'Item'
+                        const qty = item.quantity || item.Quantity || 1
+                        const rate = item.rate || item.Rate || item.unitPrice || 0
+                        const lineTotal = item.total || item.Total || (qty * rate)
+                        return (
+                          <div key={idx} className="grid grid-cols-[1fr_60px_90px_90px] gap-2 items-center text-xs py-1 border-b border-border/20">
+                            <span className="font-medium text-foreground">{desc}</span>
+                            <span className="text-center text-muted-foreground">{qty}</span>
+                            <span className="text-right text-muted-foreground">₹{rate.toLocaleString('en-IN')}</span>
+                            <span className="text-right font-medium text-foreground">₹{lineTotal.toLocaleString('en-IN')}</span>
+                          </div>
+                        )
+                      })}
+                      {labour > 0 && (
+                        <div className="grid grid-cols-[1fr_60px_90px_90px] gap-2 items-center text-xs py-1 border-b border-border/20">
+                          <span className="font-medium text-blue-400">Labour Charge</span>
+                          <span className="text-center text-muted-foreground">1</span>
+                          <span className="text-right text-muted-foreground">₹{labour.toLocaleString('en-IN')}</span>
+                          <span className="text-right font-medium text-foreground">₹{labour.toLocaleString('en-IN')}</span>
+                        </div>
+                      )}
+                    </div>
                   </div>
 
                   <div className="flex justify-between items-center pt-3 mt-2 border-t border-border/40">
@@ -417,15 +635,15 @@ function DeleteQuotationModal({ open, quotation, onClose, onConfirmDelete }: Del
                   </div>
                 </div>
 
-                <div className="flex gap-3 pt-2">
-                  <button type="button" onClick={onClose} className="flex-1 py-2.5 rounded-xl text-xs btn-secondary">
+                <div className="flex flex-col sm:flex-row gap-3 pt-2">
+                  <button type="button" onClick={onClose} className="flex-1 py-2.5 rounded-xl text-xs btn-secondary w-full">
                     Cancel (Keep Quotation)
                   </button>
                   <button
                     type="button"
                     onClick={handleDelete}
                     disabled={deleting}
-                    className="flex-1 py-2.5 rounded-xl text-xs font-semibold text-white bg-red-600 hover:bg-red-500 flex items-center justify-center gap-2 transition-colors"
+                    className="flex-1 py-2.5 rounded-xl text-xs font-semibold text-white bg-red-600 hover:bg-red-500 flex items-center justify-center gap-2 transition-colors w-full"
                   >
                     <Trash2 className="w-4 h-4" /> {deleting ? 'Deleting...' : 'Confirm & Delete Quotation'}
                   </button>
@@ -584,75 +802,79 @@ function ConvertModal({ open, quotation, onClose, onConfirm }: ConvertModalProps
                   </div>
 
                   {/* Table Column Headers */}
-                  <div className="grid grid-cols-[140px_1fr_60px_85px_65px_36px] gap-2 text-[11px] font-semibold text-muted-foreground px-1">
-                    <div>Inventory Item</div>
-                    <div>Description</div>
-                    <div className="text-center">Qty</div>
-                    <div className="text-right">Rate (₹)</div>
-                    <div className="text-right">VAT %</div>
-                    <div></div>
+                  <div className="overflow-x-auto">
+                    <div className="min-w-[600px] space-y-2 pb-2">
+                      <div className="grid grid-cols-[140px_1fr_60px_85px_65px_36px] gap-2 text-[11px] font-semibold text-muted-foreground px-1">
+                        <div>Inventory Item</div>
+                        <div>Description</div>
+                        <div className="text-center">Qty</div>
+                        <div className="text-right">Rate (₹)</div>
+                        <div className="text-right">VAT %</div>
+                        <div></div>
+                      </div>
+
+                      {items.map((item, i) => (
+                        <div key={i} className="grid grid-cols-[140px_1fr_60px_85px_65px_36px] gap-2 items-center">
+                          <select
+                            value={item.itemId || ''}
+                            onChange={e => handleSelectInventory(i, e.target.value)}
+                            className="input-field text-xs py-2 h-9 w-full"
+                          >
+                            <option value="">— Select —</option>
+                            {inventory.map(inv => (
+                              <option key={inv.id} value={inv.id.toString()}>
+                                {inv.name} (₹{inv.sellingPrice || inv.mrp})
+                              </option>
+                            ))}
+                          </select>
+
+                          <input
+                            placeholder="Description"
+                            value={item.description}
+                            onChange={e => updateItem(i, 'description', e.target.value)}
+                            className="input-field text-xs py-2 h-9 w-full"
+                          />
+
+                          <input
+                            type="number"
+                            placeholder="Qty"
+                            value={item.quantity}
+                            onChange={e => updateItem(i, 'quantity', parseInt(e.target.value) || 1)}
+                            className="input-field text-xs py-2 text-center h-9 w-full"
+                          />
+
+                          <input
+                            type="number"
+                            placeholder="Rate ₹"
+                            value={item.rate === 0 ? '' : item.rate}
+                            onChange={e => updateItem(i, 'rate', parseFloat(e.target.value) || 0)}
+                            className="input-field text-xs py-2 text-right h-9 w-full"
+                          />
+
+                          <input
+                            type="number"
+                            placeholder="VAT %"
+                            value={item.vatPercent}
+                            onChange={e => updateItem(i, 'vatPercent', parseFloat(e.target.value) ?? 0)}
+                            className="input-field text-xs py-2 text-right h-9 font-medium text-blue-400 w-full"
+                            title="Per-item VAT Percentage"
+                          />
+
+                          <button
+                            type="button"
+                            onClick={() => removeItem(i)}
+                            className="h-9 w-9 flex items-center justify-center text-red-400 hover:text-red-300 hover:bg-red-500/10 rounded-lg transition-colors"
+                            title="Delete row"
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </button>
+                        </div>
+                      ))}
+                    </div>
                   </div>
 
-                  {items.map((item, i) => (
-                    <div key={i} className="grid grid-cols-[140px_1fr_60px_85px_65px_36px] gap-2 items-center">
-                      <select
-                        value={item.itemId || ''}
-                        onChange={e => handleSelectInventory(i, e.target.value)}
-                        className="input-field text-xs py-2 h-9"
-                      >
-                        <option value="">— Select —</option>
-                        {inventory.map(inv => (
-                          <option key={inv.id} value={inv.id.toString()}>
-                            {inv.name} (₹{inv.sellingPrice || inv.mrp})
-                          </option>
-                        ))}
-                      </select>
-
-                      <input
-                        placeholder="Description"
-                        value={item.description}
-                        onChange={e => updateItem(i, 'description', e.target.value)}
-                        className="input-field text-xs py-2 h-9"
-                      />
-
-                      <input
-                        type="number"
-                        placeholder="Qty"
-                        value={item.quantity}
-                        onChange={e => updateItem(i, 'quantity', parseInt(e.target.value) || 1)}
-                        className="input-field text-xs py-2 text-center h-9"
-                      />
-
-                      <input
-                        type="number"
-                        placeholder="Rate ₹"
-                        value={item.rate === 0 ? '' : item.rate}
-                        onChange={e => updateItem(i, 'rate', parseFloat(e.target.value) || 0)}
-                        className="input-field text-xs py-2 text-right h-9"
-                      />
-
-                      <input
-                        type="number"
-                        placeholder="VAT %"
-                        value={item.vatPercent}
-                        onChange={e => updateItem(i, 'vatPercent', parseFloat(e.target.value) ?? 0)}
-                        className="input-field text-xs py-2 text-right h-9 font-medium text-blue-400"
-                        title="Per-item VAT Percentage"
-                      />
-
-                      <button
-                        type="button"
-                        onClick={() => removeItem(i)}
-                        className="h-9 w-9 flex items-center justify-center text-red-400 hover:text-red-300 hover:bg-red-500/10 rounded-lg transition-colors"
-                        title="Delete row"
-                      >
-                        <Trash2 className="w-4 h-4" />
-                      </button>
-                    </div>
-                  ))}
-
                   {/* Labour Charge */}
-                  <div className="pt-2 border-t border-border/40 grid grid-cols-2 gap-3 items-center">
+                  <div className="pt-2 border-t border-border/40 grid grid-cols-1 sm:grid-cols-2 gap-3 items-center">
                     <div className="flex items-center gap-2 text-xs font-semibold text-foreground">
                       <Wrench className="w-3.5 h-3.5 text-blue-400" /> Labour Charge (₹)
                     </div>
@@ -661,7 +883,7 @@ function ConvertModal({ open, quotation, onClose, onConfirm }: ConvertModalProps
                       placeholder="0.00"
                       value={labourCharges === 0 ? '' : labourCharges}
                       onChange={e => setLabourCharges(parseFloat(e.target.value) || 0)}
-                      className="input-field text-xs py-1.5 text-right font-medium"
+                      className="input-field text-xs py-1.5 sm:text-right font-medium w-full"
                     />
                   </div>
 
@@ -679,9 +901,9 @@ function ConvertModal({ open, quotation, onClose, onConfirm }: ConvertModalProps
                   </select>
                 </div>
 
-                <div className="flex gap-3 pt-2">
-                  <button type="button" onClick={onClose} className="flex-1 py-2.5 rounded-xl text-xs btn-secondary">Cancel</button>
-                  <button type="submit" disabled={processing || processed} className="flex-1 py-2.5 rounded-xl text-xs font-semibold text-white bg-green-600 hover:bg-green-500 flex items-center justify-center gap-2">
+                <div className="flex flex-col sm:flex-row gap-3 pt-2">
+                  <button type="button" onClick={onClose} className="flex-1 py-2.5 rounded-xl text-xs btn-secondary w-full">Cancel</button>
+                  <button type="submit" disabled={processing || processed} className="flex-1 py-2.5 rounded-xl text-xs font-semibold text-white bg-green-600 hover:bg-green-500 flex items-center justify-center gap-2 w-full">
                     {processed ? <><CheckCircle className="w-4 h-4" /> Billed & Converted!</> : processing ? 'Finalizing Bill...' : 'Confirm & Finalize Bill'}
                   </button>
                 </div>
@@ -705,6 +927,16 @@ export default function QuotationsPage() {
   const [convertingQuotation, setConvertingQuotation] = useState<any | null>(null)
   const [printingQuotation, setPrintingQuotation] = useState<any | null>(null)
   const [deletingQuotation, setDeletingQuotation] = useState<any | null>(null)
+  const [viewingQuotation, setViewingQuotation] = useState<any | null>(null)
+
+  const handleCopyQuotation = (q: any) => {
+    const copyQ = { ...q }
+    delete copyQ.id
+    delete copyQ.quotationNumber
+    delete copyQ.QuotationNumber
+    setEditingQuotation(copyQ)
+    setAddModalOpen(true)
+  }
 
   const loadQuotations = async () => {
     setLoading(true)
@@ -739,7 +971,7 @@ export default function QuotationsPage() {
   })
 
   const handleSave = async (data: any) => {
-    if (editingQuotation) {
+    if (editingQuotation && editingQuotation.id) {
       await quotationsService.update(editingQuotation.id, data)
     } else {
       await quotationsService.create(data)
@@ -801,7 +1033,8 @@ export default function QuotationsPage() {
                 initial={{ opacity: 0, y: 15 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: i * 0.04 }}
-                className={`premium-card p-4 border ${isConverted ? 'opacity-70 bg-secondary/20' : 'border-blue-500/20'}`}
+                onClick={() => setViewingQuotation(q)}
+                className={`premium-card p-4 border cursor-pointer hover:border-blue-500/40 transition-colors ${isConverted ? 'opacity-70 bg-secondary/20' : 'border-blue-500/20'}`}
               >
                 <div className="flex justify-between items-start mb-2">
                   <div>
@@ -813,7 +1046,7 @@ export default function QuotationsPage() {
                       {isConverted ? 'Converted' : status}
                     </span>
                     <button
-                      onClick={() => setDeletingQuotation(q)}
+                      onClick={(e) => { e.stopPropagation(); setDeletingQuotation(q) }}
                       className="p-1 rounded-lg text-red-400 hover:text-red-300 hover:bg-red-500/10 transition-colors"
                       title="View Details & Delete Quotation"
                     >
@@ -829,7 +1062,7 @@ export default function QuotationsPage() {
                   <span className="text-sm font-bold text-foreground">{formatCurrency(total)}</span>
                   <div className="flex items-center gap-1.5">
                     <button
-                      onClick={() => setPrintingQuotation(q)}
+                      onClick={(e) => { e.stopPropagation(); setPrintingQuotation(q) }}
                       className="p-1.5 rounded-lg bg-secondary hover:bg-secondary/80 text-muted-foreground hover:text-foreground text-xs flex items-center gap-1"
                       title="Print Official Quotation Document"
                     >
@@ -838,13 +1071,13 @@ export default function QuotationsPage() {
                     {!isConverted && (
                       <>
                         <button
-                          onClick={() => { setEditingQuotation(q); setAddModalOpen(true) }}
+                          onClick={(e) => { e.stopPropagation(); setEditingQuotation(q); setAddModalOpen(true) }}
                           className="p-1.5 rounded-lg bg-secondary hover:bg-secondary/80 text-muted-foreground hover:text-foreground text-xs flex items-center gap-1"
                         >
                           <Edit className="w-3.5 h-3.5" /> Edit
                         </button>
                         <button
-                          onClick={() => setConvertingQuotation(q)}
+                          onClick={(e) => { e.stopPropagation(); setConvertingQuotation(q) }}
                           className="btn-secondary text-xs py-1.5 px-2.5 flex items-center gap-1 bg-blue-500/10 text-blue-400 hover:bg-blue-500/20 border border-blue-500/30"
                         >
                           Convert to Invoice <ArrowRight className="w-3.5 h-3.5" />
@@ -892,6 +1125,15 @@ export default function QuotationsPage() {
         documentType="QUOTATION"
         data={printingQuotation}
         onClose={() => setPrintingQuotation(null)}
+      />
+
+      {/* Quotation Detail View Modal */}
+      <QuotationDetailModal
+        open={!!viewingQuotation}
+        quotation={viewingQuotation}
+        onClose={() => setViewingQuotation(null)}
+        onCopy={handleCopyQuotation}
+        onPrint={(q) => setPrintingQuotation(q)}
       />
     </div>
   )

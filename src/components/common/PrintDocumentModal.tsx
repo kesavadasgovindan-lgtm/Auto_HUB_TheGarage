@@ -115,8 +115,18 @@ export function PrintDocumentModal({ open, documentType, data, onClose }: PrintD
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm overflow-y-auto">
+      <style>{`
+        @media print {
+          body * { visibility: hidden; }
+          #print-section, #print-section * { visibility: visible; }
+          #print-section { position: absolute; left: 0; top: 0; width: 100%; }
+          .print-hide { display: none !important; }
+          @page { size: A4; margin: 10mm; }
+        }
+      `}</style>
+      
       {/* Control Action Bar */}
-      <div className="fixed top-4 right-4 z-50 flex items-center gap-3 print:hidden">
+      <div className="fixed top-4 right-4 z-50 flex items-center gap-3 print-hide">
         <button
           onClick={handlePrint}
           className="flex items-center gap-2 px-4 py-2.5 bg-blue-600 hover:bg-blue-500 text-white text-xs font-semibold rounded-xl shadow-lg transition-all"
@@ -132,7 +142,7 @@ export function PrintDocumentModal({ open, documentType, data, onClose }: PrintD
       </div>
 
       {/* Printable Sheet */}
-      <div className="w-full max-w-[800px] bg-white text-black p-8 rounded-xl shadow-2xl my-8 print:m-0 print:p-6 print:w-full print:shadow-none font-sans text-xs">
+      <div id="print-section" className="w-full max-w-[800px] bg-white text-black p-8 rounded-xl shadow-2xl my-8 print:m-0 print:p-6 print:w-full print:shadow-none font-sans text-xs">
         
         {/* Header Section */}
         <div className="flex justify-between items-start pb-4 border-b-2 border-gray-800 mb-4">

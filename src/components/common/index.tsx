@@ -152,12 +152,12 @@ export function PageHeader({
   children?: React.ReactNode
 }) {
   return (
-    <div className="flex items-center justify-between mb-6 flex-wrap gap-3">
+    <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-6 gap-4">
       <div>
         <h1 className="page-title">{title}</h1>
         {description && <p className="page-subtitle">{description}</p>}
       </div>
-      {children && <div className="flex items-center gap-2">{children}</div>}
+      {children && <div className="flex items-center gap-2 w-full sm:w-auto">{children}</div>}
     </div>
   )
 }

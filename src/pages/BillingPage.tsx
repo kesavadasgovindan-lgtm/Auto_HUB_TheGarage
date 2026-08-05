@@ -162,17 +162,17 @@ function DirectBillModal({ open, onClose, onComplete }: DirectBillModalProps) {
               </div>
 
               <form onSubmit={handleSubmit} className="space-y-4">
-                <div className="grid grid-cols-2 gap-3">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   <div>
                     <label className="block text-xs font-medium text-foreground mb-1">Customer *</label>
-                    <select value={customerId} onChange={e => { setCustomerId(e.target.value); setVehicleId('') }} className="input-field text-xs py-2">
+                    <select value={customerId} onChange={e => { setCustomerId(e.target.value); setVehicleId('') }} className="input-field text-xs py-2 w-full">
                       <option value="">— Select Customer —</option>
                       {customers.map(c => <option key={c.id} value={c.id}>{c.name} ({c.phone})</option>)}
                     </select>
                   </div>
                   <div>
                     <label className="block text-xs font-medium text-foreground mb-1">Vehicle</label>
-                    <select value={vehicleId} onChange={e => setVehicleId(e.target.value)} className="input-field text-xs py-2">
+                    <select value={vehicleId} onChange={e => setVehicleId(e.target.value)} className="input-field text-xs py-2 w-full">
                       <option value="">— Select Vehicle —</option>
                       {filteredVehicles.map(v => <option key={v.id} value={v.id}>{v.vehicleNumber} ({v.brand} {v.model})</option>)}
                     </select>
@@ -189,75 +189,79 @@ function DirectBillModal({ open, onClose, onComplete }: DirectBillModalProps) {
                   </div>
 
                   {/* Table Column Headers */}
-                  <div className="grid grid-cols-[140px_1fr_60px_85px_65px_36px] gap-2 text-[11px] font-semibold text-muted-foreground px-1">
-                    <div>Inventory Item</div>
-                    <div>Description</div>
-                    <div className="text-center">Qty</div>
-                    <div className="text-right">Rate (₹)</div>
-                    <div className="text-right">VAT %</div>
-                    <div></div>
+                  <div className="overflow-x-auto">
+                    <div className="min-w-[600px] space-y-2 pb-2">
+                      <div className="grid grid-cols-[140px_1fr_60px_85px_65px_36px] gap-2 text-[11px] font-semibold text-muted-foreground px-1">
+                        <div>Inventory Item</div>
+                        <div>Description</div>
+                        <div className="text-center">Qty</div>
+                        <div className="text-right">Rate (₹)</div>
+                        <div className="text-right">VAT %</div>
+                        <div></div>
+                      </div>
+
+                      {items.map((item, i) => (
+                        <div key={i} className="grid grid-cols-[140px_1fr_60px_85px_65px_36px] gap-2 items-center">
+                          <select
+                            value={item.itemId || ''}
+                            onChange={e => handleSelectInventory(i, e.target.value)}
+                            className="input-field text-xs py-2 h-9 w-full"
+                          >
+                            <option value="">— Select —</option>
+                            {inventory.map(inv => (
+                              <option key={inv.id} value={inv.id.toString()}>
+                                {inv.name} (₹{inv.sellingPrice || inv.mrp})
+                              </option>
+                            ))}
+                          </select>
+
+                          <input
+                            placeholder="Item description"
+                            value={item.description}
+                            onChange={e => updateItem(i, 'description', e.target.value)}
+                            className="input-field text-xs py-2 h-9 w-full"
+                          />
+
+                          <input
+                            type="number"
+                            placeholder="Qty"
+                            value={item.quantity}
+                            onChange={e => updateItem(i, 'quantity', parseInt(e.target.value) || 1)}
+                            className="input-field text-xs py-2 text-center h-9 w-full"
+                          />
+
+                          <input
+                            type="number"
+                            placeholder="Rate ₹"
+                            value={item.rate === 0 ? '' : item.rate}
+                            onChange={e => updateItem(i, 'rate', parseFloat(e.target.value) || 0)}
+                            className="input-field text-xs py-2 text-right h-9 w-full"
+                          />
+
+                          <input
+                            type="number"
+                            placeholder="VAT %"
+                            value={item.vatPercent}
+                            onChange={e => updateItem(i, 'vatPercent', parseFloat(e.target.value) ?? 0)}
+                            className="input-field text-xs py-2 text-right h-9 font-medium text-blue-400 w-full"
+                            title="Per-item VAT Percentage"
+                          />
+
+                          <button
+                            type="button"
+                            onClick={() => removeItem(i)}
+                            className="h-9 w-9 flex items-center justify-center text-red-400 hover:text-red-300 hover:bg-red-500/10 rounded-lg transition-colors"
+                            title="Delete line item"
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </button>
+                        </div>
+                      ))}
+                    </div>
                   </div>
 
-                  {items.map((item, i) => (
-                    <div key={i} className="grid grid-cols-[140px_1fr_60px_85px_65px_36px] gap-2 items-center">
-                      <select
-                        value={item.itemId || ''}
-                        onChange={e => handleSelectInventory(i, e.target.value)}
-                        className="input-field text-xs py-2 h-9"
-                      >
-                        <option value="">— Select —</option>
-                        {inventory.map(inv => (
-                          <option key={inv.id} value={inv.id.toString()}>
-                            {inv.name} (₹{inv.sellingPrice || inv.mrp})
-                          </option>
-                        ))}
-                      </select>
-
-                      <input
-                        placeholder="Item description"
-                        value={item.description}
-                        onChange={e => updateItem(i, 'description', e.target.value)}
-                        className="input-field text-xs py-2 h-9"
-                      />
-
-                      <input
-                        type="number"
-                        placeholder="Qty"
-                        value={item.quantity}
-                        onChange={e => updateItem(i, 'quantity', parseInt(e.target.value) || 1)}
-                        className="input-field text-xs py-2 text-center h-9"
-                      />
-
-                      <input
-                        type="number"
-                        placeholder="Rate ₹"
-                        value={item.rate === 0 ? '' : item.rate}
-                        onChange={e => updateItem(i, 'rate', parseFloat(e.target.value) || 0)}
-                        className="input-field text-xs py-2 text-right h-9"
-                      />
-
-                      <input
-                        type="number"
-                        placeholder="VAT %"
-                        value={item.vatPercent}
-                        onChange={e => updateItem(i, 'vatPercent', parseFloat(e.target.value) ?? 0)}
-                        className="input-field text-xs py-2 text-right h-9 font-medium text-blue-400"
-                        title="Per-item VAT Percentage"
-                      />
-
-                      <button
-                        type="button"
-                        onClick={() => removeItem(i)}
-                        className="h-9 w-9 flex items-center justify-center text-red-400 hover:text-red-300 hover:bg-red-500/10 rounded-lg transition-colors"
-                        title="Delete line item"
-                      >
-                        <Trash2 className="w-4 h-4" />
-                      </button>
-                    </div>
-                  ))}
-
                   {/* Dedicated Labour Charges Input */}
-                  <div className="pt-2 border-t border-border/40 grid grid-cols-2 gap-3 items-center">
+                  <div className="pt-2 border-t border-border/40 grid grid-cols-1 sm:grid-cols-2 gap-3 items-center">
                     <div className="flex items-center gap-2 text-xs font-semibold text-foreground">
                       <Wrench className="w-3.5 h-3.5 text-blue-400" /> Labour Charge (₹)
                     </div>
@@ -266,7 +270,7 @@ function DirectBillModal({ open, onClose, onComplete }: DirectBillModalProps) {
                       placeholder="0.00"
                       value={labourCharges === 0 ? '' : labourCharges}
                       onChange={e => setLabourCharges(parseFloat(e.target.value) || 0)}
-                      className="input-field text-xs py-1.5 text-right font-medium"
+                      className="input-field text-xs py-1.5 sm:text-right font-medium w-full"
                     />
                   </div>
 
@@ -276,17 +280,17 @@ function DirectBillModal({ open, onClose, onComplete }: DirectBillModalProps) {
                   </div>
                 </div>
 
-                <div className="grid grid-cols-2 gap-3">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   <div>
                     <label className="block text-xs font-medium text-foreground mb-1">Payment Mode *</label>
-                    <select value={paymentMode} onChange={e => setPaymentMode(e.target.value)} className="input-field text-xs py-2">
+                    <select value={paymentMode} onChange={e => setPaymentMode(e.target.value)} className="input-field text-xs py-2 w-full">
                       <option value="">— Select Payment Mode —</option>
                       {['UPI', 'Cash', 'Credit Card', 'Debit Card', 'Bank Transfer'].map(m => <option key={m} value={m}>{m}</option>)}
                     </select>
                   </div>
                   <div>
                     <label className="block text-xs font-medium text-foreground mb-1">Payment Status *</label>
-                    <select value={status} onChange={e => setStatus(e.target.value)} className="input-field text-xs py-2">
+                    <select value={status} onChange={e => setStatus(e.target.value)} className="input-field text-xs py-2 w-full">
                       <option value="">— Select Payment Status —</option>
                       <option value="Paid">Paid</option>
                       <option value="Pending">Pending</option>
@@ -294,9 +298,9 @@ function DirectBillModal({ open, onClose, onComplete }: DirectBillModalProps) {
                   </div>
                 </div>
 
-                <div className="flex gap-3 pt-2">
-                  <button type="button" onClick={onClose} className="flex-1 py-2.5 rounded-xl text-xs btn-secondary">Cancel</button>
-                  <button type="submit" disabled={saving || saved} className="flex-1 py-2.5 rounded-xl text-xs font-semibold text-white bg-green-600 hover:bg-green-500 flex items-center justify-center gap-2">
+                <div className="flex flex-col sm:flex-row gap-3 pt-2">
+                  <button type="button" onClick={onClose} className="flex-1 py-2.5 rounded-xl text-xs btn-secondary w-full">Cancel</button>
+                  <button type="submit" disabled={saving || saved} className="flex-1 py-2.5 rounded-xl text-xs font-semibold text-white bg-green-600 hover:bg-green-500 flex items-center justify-center gap-2 w-full">
                     {saved ? <><CheckCircle className="w-4 h-4" /> Bill Created in DB!</> : saving ? 'Saving Bill...' : 'Create & Save Bill'}
                   </button>
                 </div>
@@ -384,13 +388,173 @@ function ConvertInvoiceModal({ open, quotation, onClose, onComplete }: ConvertIn
                   </select>
                 </div>
 
-                <div className="flex gap-3 pt-2">
-                  <button type="button" onClick={onClose} className="flex-1 py-2 rounded-xl text-xs btn-secondary">Cancel</button>
-                  <button type="submit" disabled={saving || saved} className="flex-1 py-2 rounded-xl text-xs font-semibold text-white" style={{ background: saved ? '#16a34a' : '#3b82f6' }}>
+                <div className="flex flex-col sm:flex-row gap-3 pt-2">
+                  <button type="button" onClick={onClose} className="flex-1 py-2 rounded-xl text-xs btn-secondary w-full">Cancel</button>
+                  <button type="submit" disabled={saving || saved} className="flex-1 py-2 rounded-xl text-xs font-semibold text-white w-full" style={{ background: saved ? '#16a34a' : '#3b82f6' }}>
                     {saved ? <><CheckCircle className="w-4 h-4 inline mr-1" /> Invoice Created & Status Updated!</> : saving ? 'Processing Invoice...' : 'Generate & Finalize Invoice'}
                   </button>
                 </div>
               </form>
+            </motion.div>
+          </div>
+        </>
+      )}
+    </AnimatePresence>
+  )
+}
+
+// ─── Invoice Detail Modal ────────────────────────────────────────────────────
+
+interface InvoiceDetailModalProps {
+  open: boolean
+  invoice: any | null
+  onClose: () => void
+  onPrint: (inv: any) => void
+}
+
+function InvoiceDetailModal({ open, invoice, onClose, onPrint }: InvoiceDetailModalProps) {
+  if (!invoice) return null
+
+  const invNum = invoice.invoiceNumber || invoice.InvoiceNumber || `INV-${invoice.id}`
+  const date = invoice.invoiceDate || invoice.createdAt || invoice.CreatedAt
+  const custName = invoice.customerName || invoice.customer?.name || invoice.Customer?.Name || 'Customer'
+  const custPhone = invoice.customerPhone || invoice.customer?.phone || invoice.Customer?.Phone || '—'
+  const vehNum = invoice.vehicleNumber || invoice.vehicle?.vehicleNumber || invoice.Vehicle?.VehicleNumber || '—'
+  const vehName = invoice.vehicleName || (invoice.vehicle ? `${invoice.vehicle.brand} ${invoice.vehicle.model}` : '—')
+  const status = invoice.status || invoice.Status || 'Paid'
+  const paymentMode = invoice.paymentMode || invoice.paymentMethod || 'Cash'
+
+  const items = invoice.items || invoice.Items || []
+  const labour = invoice.labourCharges || invoice.LabourCharges || 0
+  const subtotal = invoice.subTotal ?? invoice.subtotal ?? 0
+  const totalVat = invoice.vatAmount ?? invoice.VatAmount ?? 0
+  const grandTotal = invoice.netAmount ?? invoice.grandTotal ?? invoice.NetAmount ?? 0
+  
+  const discountAmount = invoice.discountAmount || invoice.DiscountAmount || 0
+  const amountPaid = invoice.amountPaid ?? invoice.AmountPaid ?? grandTotal
+  const amountDue = invoice.amountDue ?? invoice.AmountDue ?? (grandTotal - amountPaid)
+
+  return (
+    <AnimatePresence>
+      {open && (
+        <>
+          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={onClose} className="fixed inset-0 bg-black/60 backdrop-blur-sm z-40" />
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+            <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} className="w-full max-w-3xl max-h-[90vh] overflow-y-auto rounded-2xl p-5 shadow-2xl bg-card border border-border">
+              <div className="flex justify-between items-center mb-4 pb-3 border-b border-border">
+                <div className="flex items-center gap-3">
+                  <h2 className="font-semibold text-lg text-foreground">Invoice Details</h2>
+                  <span className={`text-xs font-semibold px-2.5 py-0.5 rounded-full ${status === 'Paid' ? 'bg-green-500/20 text-green-400' : 'bg-yellow-500/20 text-yellow-400'}`}>
+                    {status}
+                  </span>
+                </div>
+                <button type="button" onClick={onClose} className="text-muted-foreground hover:text-foreground"><X className="w-5 h-5" /></button>
+              </div>
+
+              <div className="space-y-4 text-xs">
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-4 p-4 rounded-xl bg-secondary/30">
+                  <div>
+                    <p className="text-muted-foreground mb-1">Invoice No.</p>
+                    <p className="font-bold text-foreground text-sm">{invNum}</p>
+                  </div>
+                  <div>
+                    <p className="text-muted-foreground mb-1">Date</p>
+                    <p className="font-medium text-foreground">{formatDate(date)}</p>
+                  </div>
+                  <div>
+                    <p className="text-muted-foreground mb-1">Payment Mode</p>
+                    <p className="font-medium text-foreground">{paymentMode}</p>
+                  </div>
+                  <div>
+                    <p className="text-muted-foreground mb-1">Customer Phone</p>
+                    <p className="font-medium text-foreground">{custPhone}</p>
+                  </div>
+                  <div className="col-span-2">
+                    <p className="text-muted-foreground mb-1">Customer</p>
+                    <p className="font-medium text-foreground">{custName}</p>
+                  </div>
+                  <div className="col-span-2">
+                    <p className="text-muted-foreground mb-1">Vehicle</p>
+                    <p className="font-medium text-foreground">{vehNum} {vehName !== '—' && `(${vehName})`}</p>
+                  </div>
+                </div>
+
+                <div className="p-4 rounded-xl bg-secondary/20 border border-border/50">
+                  <p className="font-bold text-foreground mb-3 text-sm">Line Items</p>
+                  <div className="space-y-2 overflow-x-auto">
+                    <div className="min-w-[500px]">
+                      <div className="grid grid-cols-[1fr_80px_60px_90px_80px_90px] gap-3 font-semibold text-muted-foreground pb-2 border-b border-border/40 text-[11px]">
+                        <div>Description</div>
+                        <div>Type</div>
+                        <div className="text-center">Qty</div>
+                        <div className="text-right">Rate (₹)</div>
+                        <div className="text-right">Discount (₹)</div>
+                        <div className="text-right">Total (₹)</div>
+                      </div>
+                      {items.map((item: any, idx: number) => {
+                        const desc = item.description || item.Description || item.partName || 'Item'
+                        const type = item.type || (item.isLabour ? 'Labour' : 'Part')
+                        const qty = item.quantity || item.Quantity || 1
+                        const rate = item.rate || item.Rate || item.unitPrice || 0
+                        const disc = item.discount || item.Discount || 0
+                        const lineTotal = item.netAmount || item.total || item.Total || (qty * rate - disc)
+                        return (
+                          <div key={idx} className="grid grid-cols-[1fr_80px_60px_90px_80px_90px] gap-3 items-center text-xs py-2 border-b border-border/20">
+                            <span className="font-medium text-foreground truncate">{desc}</span>
+                            <span className="text-muted-foreground">{type}</span>
+                            <span className="text-center text-muted-foreground">{qty}</span>
+                            <span className="text-right text-muted-foreground">₹{rate.toLocaleString('en-IN')}</span>
+                            <span className="text-right text-muted-foreground">₹{disc.toLocaleString('en-IN')}</span>
+                            <span className="text-right font-medium text-foreground">₹{lineTotal.toLocaleString('en-IN')}</span>
+                          </div>
+                        )
+                      })}
+                    </div>
+                  </div>
+
+                  <div className="mt-4 space-y-2 text-xs border-t border-border/40 pt-4">
+                    <div className="flex justify-between text-muted-foreground">
+                      <span>Labour Charges</span>
+                      <span>₹{labour.toLocaleString('en-IN')}</span>
+                    </div>
+                    <div className="flex justify-between text-muted-foreground">
+                      <span>Subtotal</span>
+                      <span>₹{subtotal.toLocaleString('en-IN')}</span>
+                    </div>
+                    {discountAmount > 0 && (
+                      <div className="flex justify-between text-muted-foreground">
+                        <span>Discount</span>
+                        <span>-₹{discountAmount.toLocaleString('en-IN')}</span>
+                      </div>
+                    )}
+                    <div className="flex justify-between text-muted-foreground">
+                      <span>VAT</span>
+                      <span>₹{totalVat.toFixed(2)}</span>
+                    </div>
+                    <div className="flex justify-between font-bold text-sm pt-2 border-t border-border/40 text-foreground">
+                      <span>Grand Total</span>
+                      <span className="text-blue-400">₹{grandTotal.toLocaleString('en-IN')}</span>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-2 gap-4 p-4 rounded-xl bg-secondary/30">
+                  <div className="flex justify-between items-center text-sm font-semibold text-green-400">
+                    <span>Amount Paid:</span>
+                    <span>₹{amountPaid.toLocaleString('en-IN')}</span>
+                  </div>
+                  <div className="flex justify-between items-center text-sm font-semibold text-red-400">
+                    <span>Amount Due:</span>
+                    <span>₹{amountDue.toLocaleString('en-IN')}</span>
+                  </div>
+                </div>
+
+                <div className="flex justify-end pt-2">
+                  <button type="button" onClick={() => { onPrint(invoice); onClose(); }} className="px-6 py-2.5 rounded-xl text-xs font-semibold text-white bg-blue-600 hover:bg-blue-500 flex items-center justify-center gap-2">
+                    <Printer className="w-4 h-4" /> Print Invoice
+                  </button>
+                </div>
+              </div>
             </motion.div>
           </div>
         </>
@@ -409,6 +573,7 @@ export default function BillingPage() {
   const [convertQuotation, setConvertQuotation] = useState<any | null>(location.state?.quotationToInvoice || null)
   const [directBillOpen, setDirectBillOpen] = useState(false)
   const [printingInvoice, setPrintingInvoice] = useState<any | null>(null)
+  const [viewingInvoice, setViewingInvoice] = useState<any | null>(null)
 
   const loadInvoices = async () => {
     setLoading(true)
@@ -493,7 +658,7 @@ export default function BillingPage() {
                   const date = inv.createdAt || inv.invoiceDate || inv.InvoiceDate
 
                   return (
-                    <tr key={inv.id || idx}>
+                    <tr key={inv.id || idx} onClick={() => setViewingInvoice(inv)} className="cursor-pointer hover:bg-secondary/40 transition-colors">
                       <td className="font-semibold text-sm">{invNum}</td>
                       <td className="text-sm">{custName}</td>
                       <td className="text-sm text-muted-foreground">{vehNum}</td>
@@ -506,7 +671,7 @@ export default function BillingPage() {
                       <td className="text-sm text-muted-foreground">{formatDate(date)}</td>
                       <td className="text-right">
                         <button
-                          onClick={() => setPrintingInvoice(inv)}
+                          onClick={(e) => { e.stopPropagation(); setPrintingInvoice(inv); }}
                           className="px-2.5 py-1 rounded-lg bg-blue-500/10 hover:bg-blue-500/20 text-blue-400 border border-blue-500/30 text-xs font-medium inline-flex items-center gap-1 transition-colors"
                         >
                           <Printer className="w-3.5 h-3.5" /> Print Tax Invoice
@@ -542,6 +707,14 @@ export default function BillingPage() {
         documentType="TAX INVOICE"
         data={printingInvoice}
         onClose={() => setPrintingInvoice(null)}
+      />
+
+      {/* Invoice Detail Modal */}
+      <InvoiceDetailModal
+        open={!!viewingInvoice}
+        invoice={viewingInvoice}
+        onClose={() => setViewingInvoice(null)}
+        onPrint={(inv) => setPrintingInvoice(inv)}
       />
     </div>
   )

@@ -204,7 +204,7 @@ export function Sidebar({ collapsed, onToggle, mobileOpen, onMobileClose }: Side
 
 export function MobileTrigger({ onClick }: { onClick: () => void }) {
   return (
-    <button onClick={onClick} className="md:hidden p-2 rounded-xl hover:bg-secondary">
+    <button onClick={onClick} className="md:hidden p-2 rounded-xl hover:bg-secondary min-w-[44px] min-h-[44px] flex items-center justify-center">
       <Menu className="w-5 h-5" />
     </button>
   )
